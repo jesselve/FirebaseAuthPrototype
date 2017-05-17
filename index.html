@@ -1,0 +1,144 @@
+<!doctype html>
+<html class="no-js" lang="">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title></title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://www.gstatic.com/firebasejs/3.7.8/firebase.js"></script>
+    <script>
+        // Initialize Firebase
+        var config = {
+            apiKey: "AIzaSyAYQxfrZ5YWYPJDgYHHyI_qCfVangw4NaY",
+            authDomain: "arrowheadup.firebaseapp.com",
+            databaseURL: "https://arrowheadup.firebaseio.com",
+            projectId: "arrowheadup",
+            storageBucket: "arrowheadup.appspot.com",
+            messagingSenderId: "160577673628"
+        };
+        firebase.initializeApp(config);
+    </script>
+    <script src="https://cdn.firebase.com/libs/firebaseui/1.0.1/firebaseui.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://cdn.firebase.com/libs/firebaseui/1.0.1/firebaseui.css" />
+    <script type="text/javascript">
+        initApp = function() {
+            // FirebaseUI config.
+            var uiConfig = {
+                callbacks: {
+                    signInSuccess: function(currentUser, credential, redirectUrl) {
+                        // Do something.
+                        // Return type determines whether we continue the redirect automatically
+                        // or whether we leave that to developer to handle.
+                        return true;
+                    }
+                },
+                signInSuccessUrl: 'index.html',
+                signInOptions: [
+                    // Leave the lines as is for the providers you want to offer your users.
+                    //firebase.auth.GoogleAuthProvider.PROVIDER_ID,
+                    firebase.auth.EmailAuthProvider.PROVIDER_ID
+                ],
+                // Terms of service url.
+                tosUrl: '<your-tos-url>'
+            };
+
+            firebase.auth().onAuthStateChanged(function(user) {
+                if (user) {
+                    // User is signed in.
+                    var displayName = user.displayName;
+                    var email = user.email;
+                    var emailVerified = user.emailVerified;
+                    var photoURL = user.photoURL;
+                    var uid = user.uid;
+                    var providerData = user.providerData;
+                    user.getToken().then(function(accessToken) {
+
+                        document.getElementById('sign-in').style.display = 'none';
+                        document.getElementById('sign-out').style.display = 'block';
+                        document.getElementById('account-details').textContent = JSON.stringify({
+                            displayName: displayName,
+                            email: email,
+                            emailVerified: emailVerified,
+                            photoURL: photoURL,
+                            uid: uid,
+                            accessToken: accessToken,
+                            providerData: providerData
+                        }, null, '  ');
+
+                        loginAPI(accessToken);
+
+                    });
+                } else {
+                    // User is signed out.
+
+                    // Initialize the FirebaseUI Widget using Firebase.
+                    var ui = new firebaseui.auth.AuthUI(firebase.auth());
+                    // The start method will wait until the DOM is loaded.
+                    ui.start('#firebaseui-auth-container', uiConfig);
+                    document.getElementById('sign-in').style.display = 'block';
+                    document.getElementById('sign-out').style.display = 'none';
+                    document.getElementById('account-details').textContent = '';
+                }
+            }, function(error) {
+                console.log(error);
+            });
+        };
+
+        window.addEventListener('load', function() {
+            initApp()
+        });
+
+        function loginAPI(userIdToken)
+        {
+            $.ajax({
+                url: "http://temagamiapi.azurewebsites.net/api/user",
+                dataType: 'json',
+                type: 'GET',
+                beforeSend: function (xhr) {
+                    /* //this is accurate but causes an "OPTIONS" pre-flight request:
+                     xhr.setRequestHeader("Accept", "application/json");
+                     xhr.setRequestHeader("Content-Type", "application/json");
+                     */
+
+                    xhr.setRequestHeader("Accept", "text/plain");
+                    xhr.setRequestHeader("Content-Type", "text/plain");
+                    xhr.setRequestHeader("Authorization", "Bearer " + userIdToken);
+                },
+                error: function (ex) {
+                    console.log(ex.status + " - " + ex.statusText);
+                },
+                success: function (data) {
+                    console.log(data);
+                    return data;
+                }
+            });
+        }
+
+    </script>
+
+</head>
+<body>
+<!--[if lt IE 8]>
+<p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+<![endif]-->
+
+<!-- Add your site or application content here -->
+<h1>Firebase Authentication Prototype</h1>
+<div id="sign-in">
+    <div id="firebaseui-auth-container"></div>
+</div>
+<div id="sign-out">
+    <button id="signOut">Sign Out</button>
+    <script>
+        document.getElementById('signOut').addEventListener('click', function(event) {
+            firebase.auth().signOut();
+        });
+    </script>
+</div>
+<pre id="account-details"></pre>
+
+<script src="https://code.jquery.com/jquery-3.2.0.min.js" integrity="sha256-JAW99MJVpJBGcbzEuXk4Az05s/XyDdBomFqNlM3ic+I=" crossorigin="anonymous"></script>
+<script>window.jQuery || document.write('<script src="js/vendor/jquery-3.2.0.min.js"><\/script>')</script>
+</body>
+</html>
