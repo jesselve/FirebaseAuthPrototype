@@ -23,6 +23,7 @@
     <link type="text/css" rel="stylesheet" href="https://cdn.firebase.com/libs/firebaseui/1.0.1/firebaseui.css" />
     <script type="text/javascript">
         initApp = function() {
+
             // FirebaseUI config.
             var uiConfig = {
                 callbacks: {
@@ -44,8 +45,13 @@
             };
 
             firebase.auth().onAuthStateChanged(function(user) {
-                if (user) {
-                    // User is signed in.
+                if (user) {// User is signed in
+
+                    //Reload if page is refreshed:
+                    if (window.performance && performance.navigation.type === 1) {
+                        firebase.auth().currentUser.reload();
+                    }
+
                     var displayName = user.displayName;
                     var email = user.email;
                     var emailVerified = user.emailVerified;
@@ -65,6 +71,15 @@
                             accessToken: accessToken,
                             providerData: providerData
                         }, null, '  ');
+
+                        if(!emailVerified){
+                            //this works as a proof-of-concept but nothing prevents re-sends:
+                            user.sendEmailVerification().then(function() {
+                                console.log("email verification sent.");
+                            }, function(error) {
+                                console.log(error);
+                            });
+                        }
 
                         loginAPI(accessToken);
 
@@ -92,15 +107,11 @@
         function loginAPI(userIdToken)
         {
             $.ajax({
-                url: "http://temagamiapi.azurewebsites.net/api/user",
+                url: "http://temagamiapi.azurewebsites.net/api/contact",
+                //url: "https://localhost:44349/api/contact",
                 dataType: 'json',
                 type: 'GET',
                 beforeSend: function (xhr) {
-                    /* //this is accurate but causes an "OPTIONS" pre-flight request:
-                     xhr.setRequestHeader("Accept", "application/json");
-                     xhr.setRequestHeader("Content-Type", "application/json");
-                     */
-
                     xhr.setRequestHeader("Accept", "text/plain");
                     xhr.setRequestHeader("Content-Type", "text/plain");
                     xhr.setRequestHeader("Authorization", "Bearer " + userIdToken);
